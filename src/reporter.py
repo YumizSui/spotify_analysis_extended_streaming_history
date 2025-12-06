@@ -23,9 +23,11 @@ class Reporter:
         self.output_dir = Path(output_dir)
         self.images_dir = self.output_dir / "images"
         self.assets_dir = self.output_dir / "assets"
+        self.data_dir = self.output_dir / "data"
 
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.assets_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # スタイル設定
         plt.style.use("seaborn-v0_8-darkgrid")
@@ -576,6 +578,64 @@ class Reporter:
         )
 
         fig.write_html(str(self.images_dir / output_name))
+
+    def save_top_artists_json(self, top_artists: pd.DataFrame, metric: str, limit: int) -> Dict:
+        """トップアーティストデータをJSON形式で返す"""
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_artists_sorted = top_artists.sort_values(y_col, ascending=False).head(limit)
+
+        return {
+            "metric": metric,
+            "ylabel": ylabel,
+            "data": top_artists_sorted.to_dict("records")
+        }
+
+    def save_top_tracks_json(self, top_tracks: pd.DataFrame, metric: str, limit: int) -> Dict:
+        """トップトラックデータをJSON形式で返す"""
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_tracks_sorted = top_tracks.sort_values(y_col, ascending=False).head(limit)
+
+        return {
+            "metric": metric,
+            "ylabel": ylabel,
+            "data": top_tracks_sorted.to_dict("records")
+        }
+
+    def save_top_albums_json(self, top_albums: pd.DataFrame, metric: str, limit: int) -> Dict:
+        """トップアルバムデータをJSON形式で返す"""
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_albums_sorted = top_albums.sort_values(y_col, ascending=False).head(limit)
+
+        return {
+            "metric": metric,
+            "ylabel": ylabel,
+            "data": top_albums_sorted.to_dict("records")
+        }
+
+    def save_data_json(self, data: Dict, filename: str):
+        """データをJSONファイルとして保存"""
+        output_file = self.data_dir / filename
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"JSONデータを保存しました: {output_file}")
 
     def generate_html_report(self, analysis_results: Dict, template_path: Optional[str] = None):
         """HTMLレポートを生成"""
