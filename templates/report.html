@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Extended History Report</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .kpi-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .kpi-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .tabs-level1 {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .tabs-level2 {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .control-group label {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .control-group select {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 1em;
+            background: white;
+            color: #333;
+        }
+        .section {
+            margin: 40px 0;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .section img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .chart-container {
+            margin: 30px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 My Personal Spotify Wrapped</h1>
+
+        <!-- 第1階層タブ: 全期間 / 年ごと -->
+        <div class="tabs-level1">
+            <button class="tab active" onclick="switchPeriod('all')">全期間</button>
+            <button class="tab" onclick="switchPeriod('yearly')">年ごと</button>
+        </div>
+
+        <!-- 全期間タブ -->
+        <div id="all-period" class="tab-content active">
+            <div class="kpi-section" id="all-kpi-section">
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生時間</div>
+                    <div class="kpi-value" data-value="{{ kpis.total_duration_hours }}">{{ kpis.total_duration_hours | round(0) | int }}h</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生回数</div>
+                    <div class="kpi-value" data-value="{{ kpis.total_plays }}">{{ kpis.total_plays | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">有効再生回数</div>
+                    <div class="kpi-value" data-value="{{ kpis.valid_plays }}">{{ kpis.valid_plays | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークアーティスト</div>
+                    <div class="kpi-value" data-value="{{ kpis.unique_artists }}">{{ kpis.unique_artists | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークトラック</div>
+                    <div class="kpi-value" data-value="{{ kpis.unique_tracks }}">{{ kpis.unique_tracks | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Listen Through Rate</div>
+                    <div class="kpi-value">{{ kpis.listen_through_rate }}%</div>
+                </div>
+            </div>
+
+            <!-- 全期間タブのコントロール -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="all-limit-select">表示件数:</label>
+                    <select id="all-limit-select" onchange="switchAllLimit()">
+                        <option value="10">10件</option>
+                        <option value="20">20件</option>
+                        <option value="30">30件</option>
+                        <option value="50">50件</option>
+                        <option value="100">100件</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 第2階層タブ: 再生時間ベース / 再生数ベース -->
+            <div class="tabs-level2">
+                <button class="tab active" onclick="switchMetric('duration', 'all')">再生時間ベース</button>
+                <button class="tab" onclick="switchMetric('count', 'all')">再生数ベース</button>
+            </div>
+
+            <div id="all-count-tab" class="tab-content">
+                <div class="section">
+                    <h2>Top Artists (再生数)</h2>
+                    <div id="all-artists-count-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Tracks (再生数)</h2>
+                    <div id="all-tracks-count-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Albums (再生数)</h2>
+                    <div id="all-albums-count-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <div id="all-duration-tab" class="tab-content active">
+                <div class="section">
+                    <h2>Top Artists (再生時間)</h2>
+                    <div id="all-artists-duration-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Tracks (再生時間)</h2>
+                    <div id="all-tracks-duration-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Albums (再生時間)</h2>
+                    <div id="all-albums-duration-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Peak Listening Time</h2>
+                <img src="images/peak_listening_time.png" alt="Peak Listening Time">
+            </div>
+
+            <div class="section">
+                <h2>Seasonal Trends</h2>
+                <img src="images/seasonal_trends.png" alt="Seasonal Trends">
+            </div>
+
+            <div class="section">
+                <h2>KPI推移（年ごと）</h2>
+                <div class="chart-container">
+                    <div id="kpi-trends-chart"></div>
+                </div>
+            </div>
+
+            {% if has_artist_trends %}
+            <div class="section">
+                <h2>アーティストごとの再生推移</h2>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="trends-limit-select">表示件数:</label>
+                        <select id="trends-limit-select" onchange="updateArtistTrends()">
+                            <option value="10">10件</option>
+                            <option value="20">20件</option>
+                            <option value="30">30件</option>
+                            <option value="50">50件</option>
+                            <option value="100">100件</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="trends-type-select">表示タイプ:</label>
+                        <select id="trends-type-select" onchange="updateArtistTrends()">
+                            <option value="normal">通常</option>
+                            <option value="cumulative" selected>累積</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div id="artist-trends-chart"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 年ごとタブ -->
+        <div id="yearly-period" class="tab-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="year-select">年:</label>
+                    <select id="year-select" onchange="switchYear()">
+                        {% for year in available_years %}
+                        <option value="{{ year }}" {% if loop.last %}selected{% endif %}>{{ year }}年</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="limit-select">表示件数:</label>
+                    <select id="limit-select" onchange="switchLimit()">
+                        <option value="10">10件</option>
+                        <option value="20">20件</option>
+                        <option value="30">30件</option>
+                        <option value="50">50件</option>
+                        <option value="100">100件</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="yearly-kpi-section" class="kpi-section">
+                {% set year = available_years[-1] %}
+                {% set year_kpis = yearly_data[year].kpis %}
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生時間</div>
+                    <div class="kpi-value" data-value="{{ year_kpis.total_duration_hours }}">{{ year_kpis.total_duration_hours | round(0) | int }}h</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生回数</div>
+                    <div class="kpi-value" data-value="{{ year_kpis.total_plays }}">{{ year_kpis.total_plays | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">有効再生回数</div>
+                    <div class="kpi-value" data-value="{{ year_kpis.valid_plays }}">{{ year_kpis.valid_plays | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークアーティスト</div>
+                    <div class="kpi-value" data-value="{{ year_kpis.unique_artists }}">{{ year_kpis.unique_artists | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークトラック</div>
+                    <div class="kpi-value" data-value="{{ year_kpis.unique_tracks }}">{{ year_kpis.unique_tracks | int }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Listen Through Rate</div>
+                    <div class="kpi-value">{{ year_kpis.listen_through_rate }}%</div>
+                </div>
+            </div>
+
+            <!-- 第2階層タブ: 再生時間ベース / 再生数ベース -->
+            <div class="tabs-level2">
+                <button class="tab active" onclick="switchMetric('duration', 'yearly')">再生時間ベース</button>
+                <button class="tab" onclick="switchMetric('count', 'yearly')">再生数ベース</button>
+            </div>
+
+            <div id="yearly-count-tab" class="tab-content">
+                <div class="section">
+                    <h2>Top Artists (再生数)</h2>
+                    <div id="yearly-artists-count-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Tracks (再生数)</h2>
+                    <div id="yearly-tracks-count-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Albums (再生数)</h2>
+                    <div id="yearly-albums-count-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <div id="yearly-duration-tab" class="tab-content active">
+                <div class="section">
+                    <h2>Top Artists (再生時間)</h2>
+                    <div id="yearly-artists-duration-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Tracks (再生時間)</h2>
+                    <div id="yearly-tracks-duration-chart" class="chart-container"></div>
+                </div>
+
+                <div class="section">
+                    <h2>Top Albums (再生時間)</h2>
+                    <div id="yearly-albums-duration-chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Peak Listening Time</h2>
+                <img id="yearly-peak-img" src="images/peak_listening_time_{{ available_years[-1] }}.png" alt="Peak Listening Time">
+            </div>
+        </div>
+
+        {% if audio_aura %}
+        <div class="section">
+            <h2>Audio Aura - オーディオ特徴量</h2>
+            <div class="chart-container">
+                <iframe src="images/audio_aura.html" width="100%" height="600" frameborder="0"></iframe>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if genre_data %}
+        <div class="section">
+            <h2>Genre Distribution - ジャンル分布</h2>
+            <img src="images/genre_pie.png" alt="Genre Distribution">
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const availableYears = {{ available_years | tojson }};
+        const yearlyData = {{ yearly_data | tojson }};
+        const allPeriodData = {{ all_period_data_json | tojson }};
+        const yearlyDataJson = {{ yearly_data_json | tojson }};
+        const artistTrendsData = {{ artist_trends_data_json | tojson }};
+        let currentYear = availableYears.length > 0 ? availableYears[availableYears.length - 1] : availableYears[0];
+        let currentLimit = 10;
+        let currentTrendsLimit = 10;
+        let currentTrendsType = 'cumulative';
+
+        function formatNumber(num) {
+            if (typeof num === 'string' && num.includes('h')) {
+                return num; // 既にフォーマット済み
+            }
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // ページ読み込み時に数値をフォーマット
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全期間KPIの数値をフォーマット
+            document.querySelectorAll('#all-kpi-section .kpi-value[data-value]').forEach(el => {
+                const value = parseFloat(el.getAttribute('data-value'));
+                if (el.textContent.includes('h')) {
+                    el.textContent = formatNumber(Math.round(value)) + 'h';
+                } else {
+                    el.textContent = formatNumber(Math.round(value));
+                }
+            });
+
+            // 年ごとKPIの数値をフォーマット
+            updateYearlyKPI();
+
+            // 初期グラフを表示
+            updateAllPeriodCharts('duration');
+            updateYearlyCharts('duration');
+
+            // KPI推移グラフを初期表示
+            updateKPITrends();
+
+            // アーティスト推移グラフを初期表示
+            {% if has_artist_trends %}
+            updateArtistTrends();
+            {% endif %}
+        });
+
+        function switchPeriod(period) {
+            // 第1階層タブ切り替え
+            document.querySelectorAll('.tabs-level1 .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs-level2 .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+
+            if (period === 'all') {
+                document.getElementById('all-period').classList.add('active');
+                document.querySelectorAll('#all-period .tabs-level2 .tab')[0].classList.add('active');
+                document.getElementById('all-duration-tab').classList.add('active');
+            } else {
+                document.getElementById('yearly-period').classList.add('active');
+                document.querySelectorAll('#yearly-period .tabs-level2 .tab')[0].classList.add('active');
+                document.getElementById('yearly-duration-tab').classList.add('active');
+                updateYearlyKPI();
+            }
+        }
+
+        function switchMetric(metric, period) {
+            // 第2階層タブ切り替え
+            const level2Tabs = document.querySelectorAll('.tabs-level2 .tab');
+            level2Tabs.forEach(t => t.classList.remove('active'));
+
+            if (period === 'all') {
+                document.querySelectorAll('#all-period .tab-content').forEach(c => c.classList.remove('active'));
+                event.target.classList.add('active');
+                document.getElementById(`all-${metric}-tab`).classList.add('active');
+                updateAllPeriodCharts(metric);
+            } else {
+                document.querySelectorAll('#yearly-period .tab-content').forEach(c => c.classList.remove('active'));
+                event.target.classList.add('active');
+                document.getElementById(`yearly-${metric}-tab`).classList.add('active');
+                updateYearlyCharts(metric);
+            }
+        }
+
+        function switchYear() {
+            currentYear = parseInt(document.getElementById('year-select').value);
+            console.log('Switching to year:', currentYear);
+            updateYearlyKPI();
+            // Peak Listening Time画像も更新
+            const peakImg = document.getElementById('yearly-peak-img');
+            if (peakImg) {
+                peakImg.src = `images/peak_listening_time_${currentYear}.png`;
+            }
+            // 現在表示されているタブコンテンツを確認してメトリックを判定
+            const countTab = document.getElementById('yearly-count-tab');
+            const durationTab = document.getElementById('yearly-duration-tab');
+            const activeMetric = countTab && countTab.classList.contains('active') ? 'count' : 'duration';
+            console.log('Active metric:', activeMetric);
+            updateYearlyCharts(activeMetric);
+        }
+
+        function switchLimit() {
+            currentLimit = parseInt(document.getElementById('limit-select').value);
+            const activeTab = document.querySelector('#yearly-period .tabs-level2 .tab.active');
+            const activeMetric = activeTab && activeTab.textContent.includes('再生数') ? 'count' : 'duration';
+            updateYearlyCharts(activeMetric);
+        }
+
+        function switchAllLimit() {
+            currentLimit = parseInt(document.getElementById('all-limit-select').value);
+            const activeTab = document.querySelector('#all-period .tabs-level2 .tab.active');
+            const activeMetric = activeTab && activeTab.textContent.includes('再生数') ? 'count' : 'duration';
+            updateAllPeriodCharts(activeMetric);
+        }
+
+        function updateYearlyKPI() {
+            const yearStr = currentYear.toString();
+            if (!yearlyData[yearStr]) {
+                console.error(`Year data not found for ${currentYear}`);
+                return;
+            }
+            const yearKpis = yearlyData[yearStr].kpis;
+            const kpiSection = document.getElementById('yearly-kpi-section');
+            kpiSection.innerHTML = `
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生時間</div>
+                    <div class="kpi-value">${formatNumber(Math.round(yearKpis.total_duration_hours))}h</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">総再生回数</div>
+                    <div class="kpi-value">${formatNumber(Math.round(yearKpis.total_plays))}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">有効再生回数</div>
+                    <div class="kpi-value">${formatNumber(Math.round(yearKpis.valid_plays))}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークアーティスト</div>
+                    <div class="kpi-value">${formatNumber(Math.round(yearKpis.unique_artists))}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">ユニークトラック</div>
+                    <div class="kpi-value">${formatNumber(Math.round(yearKpis.unique_tracks))}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Listen Through Rate</div>
+                    <div class="kpi-value">${yearKpis.listen_through_rate}%</div>
+                </div>
+            `;
+        }
+
+
+        function renderBarChart(containerId, data, title, ylabel) {
+            if (!data || !data.data || data.data.length === 0) {
+                document.getElementById(containerId).innerHTML = '<p>データがありません</p>';
+                return;
+            }
+
+            const records = data.data;
+            let labels, values;
+
+            // より具体的な条件から順にチェック（Tracks > Albums > Artists）
+            if (records[0].master_metadata_track_name !== undefined) {
+                // Tracks
+                labels = records.map(r => `${r.master_metadata_track_name || 'Unknown'} - ${r.master_metadata_album_artist_name || 'Unknown'}`);
+                values = records.map(r => r[data.metric === 'count' ? 'play_count' : 'total_hours']);
+            } else if (records[0].master_metadata_album_album_name !== undefined) {
+                // Albums
+                labels = records.map(r => `${r.master_metadata_album_album_name || 'Unknown'} - ${r.master_metadata_album_artist_name || 'Unknown'}`);
+                values = records.map(r => r[data.metric === 'count' ? 'play_count' : 'total_hours']);
+            } else if (records[0].master_metadata_album_artist_name !== undefined) {
+                // Artists
+                labels = records.map(r => r.master_metadata_album_artist_name || 'Unknown');
+                values = records.map(r => r[data.metric === 'count' ? 'play_count' : 'total_hours']);
+            } else {
+                document.getElementById(containerId).innerHTML = '<p>データ形式が正しくありません</p>';
+                return;
+            }
+
+            // 逆順にして上から下に表示
+            labels = labels.reverse();
+            values = values.reverse();
+
+            const trace = {
+                x: values,
+                y: labels,
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                    color: 'rgba(102, 126, 234, 0.8)',
+                    line: {
+                        color: 'rgba(102, 126, 234, 1.0)',
+                        width: 1
+                    }
+                }
+            };
+
+            const layout = {
+                title: {
+                    text: title,
+                    font: { size: 18 }
+                },
+                xaxis: {
+                    title: ylabel,
+                    titlefont: { size: 14 }
+                },
+                yaxis: {
+                    automargin: true
+                },
+                margin: { l: 200, r: 50, t: 50, b: 50 },
+                height: Math.max(400, records.length * 30 + 100)
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: true
+            };
+
+            Plotly.newPlot(containerId, [trace], layout, config);
+        }
+
+        function updateAllPeriodCharts(metric) {
+            if (!allPeriodData) return;
+
+            const data = allPeriodData[metric];
+
+            if (data) {
+                // データをスライスして使用
+                const artistsData = {
+                    ...data.artists,
+                    data: data.artists.data.slice(0, currentLimit)
+                };
+                const tracksData = {
+                    ...data.tracks,
+                    data: data.tracks.data.slice(0, currentLimit)
+                };
+                const albumsData = {
+                    ...data.albums,
+                    data: data.albums.data.slice(0, currentLimit)
+                };
+
+                renderBarChart('all-artists-' + metric + '-chart', artistsData, `Top Artists (${data.artists.ylabel})`, data.artists.ylabel);
+                renderBarChart('all-tracks-' + metric + '-chart', tracksData, `Top Tracks (${data.tracks.ylabel})`, data.tracks.ylabel);
+                renderBarChart('all-albums-' + metric + '-chart', albumsData, `Top Albums (${data.albums.ylabel})`, data.albums.ylabel);
+            }
+        }
+
+        function updateYearlyCharts(metric) {
+            if (!yearlyDataJson) {
+                console.error('yearlyDataJson is not available');
+                return;
+            }
+
+            const yearStr = currentYear.toString();
+            const yearData = yearlyDataJson[yearStr];
+
+            if (!yearData) {
+                console.error(`Year data not found for ${currentYear}`);
+                return;
+            }
+
+            if (yearData[metric]) {
+                const data = yearData[metric];
+                // データをスライスして使用
+                const artistsData = {
+                    ...data.artists,
+                    data: data.artists.data.slice(0, currentLimit)
+                };
+                const tracksData = {
+                    ...data.tracks,
+                    data: data.tracks.data.slice(0, currentLimit)
+                };
+                const albumsData = {
+                    ...data.albums,
+                    data: data.albums.data.slice(0, currentLimit)
+                };
+
+                console.log(`Updating yearly charts for year ${currentYear}, metric ${metric}, limit ${currentLimit}`);
+                renderBarChart('yearly-artists-' + metric + '-chart', artistsData, `Top Artists ${currentYear} (${data.artists.ylabel})`, data.artists.ylabel);
+                renderBarChart('yearly-tracks-' + metric + '-chart', tracksData, `Top Tracks ${currentYear} (${data.tracks.ylabel})`, data.tracks.ylabel);
+                renderBarChart('yearly-albums-' + metric + '-chart', albumsData, `Top Albums ${currentYear} (${data.albums.ylabel})`, data.albums.ylabel);
+            } else {
+                console.error(`Metric ${metric} not found for year ${currentYear}`);
+            }
+        }
+
+        function updateKPITrends() {
+            if (!yearlyData) {
+                console.log('yearlyData is not available');
+                return;
+            }
+
+            // 年ごとのKPIデータを取得
+            const years = availableYears.sort();
+            console.log('Years:', years);
+            console.log('yearlyData:', yearlyData);
+            const kpiData = {
+                total_duration_hours: [],
+                total_plays: [],
+                valid_plays: [],
+                unique_artists: [],
+                unique_tracks: [],
+                listen_through_rate: []
+            };
+
+            years.forEach(year => {
+                const yearStr = year.toString();
+                if (!yearlyData[yearStr] || !yearlyData[yearStr].kpis) {
+                    console.error(`Missing data for year ${year}`);
+                    return;
+                }
+                const yearKpis = yearlyData[yearStr].kpis;
+                kpiData.total_duration_hours.push(yearKpis.total_duration_hours);
+                kpiData.total_plays.push(yearKpis.total_plays);
+                kpiData.valid_plays.push(yearKpis.valid_plays);
+                kpiData.unique_artists.push(yearKpis.unique_artists);
+                kpiData.unique_tracks.push(yearKpis.unique_tracks);
+                kpiData.listen_through_rate.push(yearKpis.listen_through_rate);
+            });
+
+            console.log('kpiData:', kpiData);
+
+            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
+
+            // サブプロットを作成（2行3列、手動でdomainを設定）
+            const traces = [
+                {
+                    x: years,
+                    y: kpiData.total_duration_hours,
+                    name: '総再生時間 (時間)',
+                    type: 'bar',
+                    marker: { color: colors[0] },
+                    xaxis: 'x1',
+                    yaxis: 'y1'
+                },
+                {
+                    x: years,
+                    y: kpiData.total_plays,
+                    name: '総再生回数',
+                    type: 'bar',
+                    marker: { color: colors[1] },
+                    xaxis: 'x2',
+                    yaxis: 'y2'
+                },
+                {
+                    x: years,
+                    y: kpiData.valid_plays,
+                    name: '有効再生回数',
+                    type: 'bar',
+                    marker: { color: colors[2] },
+                    xaxis: 'x3',
+                    yaxis: 'y3'
+                },
+                {
+                    x: years,
+                    y: kpiData.unique_artists,
+                    name: 'ユニークアーティスト',
+                    type: 'bar',
+                    marker: { color: colors[3] },
+                    xaxis: 'x4',
+                    yaxis: 'y4'
+                },
+                {
+                    x: years,
+                    y: kpiData.unique_tracks,
+                    name: 'ユニークトラック',
+                    type: 'bar',
+                    marker: { color: colors[4] },
+                    xaxis: 'x5',
+                    yaxis: 'y5'
+                },
+                {
+                    x: years,
+                    y: kpiData.listen_through_rate,
+                    name: 'Listen Through Rate (%)',
+                    type: 'bar',
+                    marker: { color: colors[5] },
+                    xaxis: 'x6',
+                    yaxis: 'y6'
+                }
+            ];
+
+            // サブプロットのレイアウト（2行3列、手動でdomainを設定、マージンを追加）
+            const layout = {
+                title: { text: 'KPI推移（年ごと）', font: { size: 18 } },
+                height: 800,
+                margin: { l: 60, r: 20, t: 80, b: 60 },
+                // 1行目（上部）
+                xaxis: { domain: [0, 0.31], title: '年', anchor: 'y1', side: 'bottom' },
+                xaxis2: { domain: [0.345, 0.655], title: '年', anchor: 'y2', side: 'bottom' },
+                xaxis3: { domain: [0.69, 1], title: '年', anchor: 'y3', side: 'bottom' },
+                // 2行目（下部）
+                xaxis4: { domain: [0, 0.31], title: '年', anchor: 'y4', side: 'bottom' },
+                xaxis5: { domain: [0.345, 0.655], title: '年', anchor: 'y5', side: 'bottom' },
+                xaxis6: { domain: [0.69, 1], title: '年', anchor: 'y6', side: 'bottom' },
+                // 1行目のY軸（上部）
+                yaxis: { domain: [0.52, 0.98], title: '総再生時間 (時間)', anchor: 'x1', side: 'left' },
+                yaxis2: { domain: [0.52, 0.98], title: '総再生回数', anchor: 'x2', side: 'left' },
+                yaxis3: { domain: [0.52, 0.98], title: '有効再生回数', anchor: 'x3', side: 'left' },
+                // 2行目のY軸（下部）
+                yaxis4: { domain: [0.02, 0.48], title: 'ユニークアーティスト', anchor: 'x4', side: 'left' },
+                yaxis5: { domain: [0.02, 0.48], title: 'ユニークトラック', anchor: 'x5', side: 'left' },
+                yaxis6: { domain: [0.02, 0.48], title: 'Listen Through Rate (%)', anchor: 'x6', side: 'left' },
+                annotations: [
+                    { text: '総再生時間 (時間)', x: 0.155, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
+                    { text: '総再生回数', x: 0.5, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
+                    { text: '有効再生回数', x: 0.845, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
+                    { text: 'ユニークアーティスト', x: 0.155, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
+                    { text: 'ユニークトラック', x: 0.5, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
+                    { text: 'Listen Through Rate (%)', x: 0.845, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } }
+                ],
+                showlegend: false
+            };
+
+            const chartElement = document.getElementById('kpi-trends-chart');
+            if (!chartElement) {
+                console.error('kpi-trends-chart element not found');
+                return;
+            }
+
+            console.log('Plotting KPI trends with', traces.length, 'traces');
+            Plotly.newPlot('kpi-trends-chart', traces, layout, { responsive: true, displayModeBar: true })
+                .then(() => {
+                    console.log('KPI trends chart rendered successfully');
+                })
+                .catch(error => {
+                    console.error('Error rendering KPI trends chart:', error);
+                });
+        }
+
+        function updateArtistTrends() {
+            if (!artistTrendsData) return;
+
+            currentTrendsLimit = parseInt(document.getElementById('trends-limit-select').value);
+            currentTrendsType = document.getElementById('trends-type-select').value;
+
+            const trendsData = artistTrendsData[currentTrendsType];
+            if (!trendsData || !trendsData.data || trendsData.data.length === 0) {
+                document.getElementById('artist-trends-chart').innerHTML = '<p>データがありません</p>';
+                return;
+            }
+
+            // アーティストごとにグループ化
+            const artistGroups = {};
+            trendsData.data.forEach(record => {
+                if (!artistGroups[record.artist]) {
+                    artistGroups[record.artist] = [];
+                }
+                artistGroups[record.artist].push(record);
+            });
+
+            // トップNアーティストを選択（全期間の合計再生時間でソート）
+            const artistTotals = Object.keys(artistGroups).map(artist => {
+                const records = artistGroups[artist];
+                const total = records.reduce((sum, r) => sum + (r.total_hours || 0), 0);
+                return { artist, total, records };
+            });
+            artistTotals.sort((a, b) => b.total - a.total);
+            const topArtists = artistTotals.slice(0, currentTrendsLimit);
+
+            // Plotlyグラフを作成
+            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                           '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d3', '#c7c7c7', '#dbdb8d', '#9edae5'];
+            const traces = [];
+
+            topArtists.forEach((artistInfo, i) => {
+                const records = artistInfo.records.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const dates = records.map(r => r.date);
+                const yCol = currentTrendsType === 'cumulative' ? 'cumulative_hours' : 'total_hours';
+                const yValues = records.map(r => r[yCol] || 0);
+
+                traces.push({
+                    x: dates,
+                    y: yValues,
+                    mode: 'lines+markers',
+                    name: artistInfo.artist,
+                    line: { color: colors[i % colors.length], width: 2 },
+                    marker: { size: 6 }
+                });
+            });
+
+            const yLabel = currentTrendsType === 'cumulative' ? '累積再生時間 (時間)' : '再生時間 (時間)';
+            const layout = {
+                title: `アーティストごとの再生推移${currentTrendsType === 'cumulative' ? '（累積）' : ''}`,
+                xaxis: { title: '日付' },
+                yaxis: { title: yLabel },
+                hovermode: 'x unified',
+                height: 600,
+                font: { size: 12 }
+            };
+
+            Plotly.newPlot('artist-trends-chart', traces, layout, { responsive: true, displayModeBar: true });
+        }
+    </script>
+</body>
+</html>
