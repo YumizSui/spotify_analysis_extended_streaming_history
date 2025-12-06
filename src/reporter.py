@@ -1,7 +1,8 @@
 """Reporter: グラフ生成とHTMLレポート生成"""
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # バックエンドを明示的に設定
 import matplotlib.pyplot as plt
-import japanize_matplotlib
 import seaborn as sns
 import plotly.graph_objects as go
 import plotly.express as px
@@ -12,6 +13,7 @@ import requests
 from jinja2 import Template
 import json
 import numpy as np
+import japanize_matplotlib  # スタイル設定の後にインポート
 
 
 class Reporter:
@@ -28,6 +30,9 @@ class Reporter:
         # スタイル設定
         plt.style.use("seaborn-v0_8-darkgrid")
         sns.set_palette("husl")
+
+        # スタイル設定後に日本語フォントを再設定
+        japanize_matplotlib.japanize()  # 明示的に呼び出し
 
     def download_album_art(self, url: str, track_id: str) -> Optional[str]:
         """アルバムアートをダウンロードして保存"""
@@ -272,6 +277,278 @@ class Reporter:
         plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
         plt.close()
 
+    def plot_top_albums(self, top_albums: pd.DataFrame, metric: str, output_name: str):
+        """トップアルバムの棒グラフ"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_albums = top_albums.sort_values(y_col, ascending=True)
+        labels = [
+            f"{row['master_metadata_album_album_name']}\n({row['master_metadata_album_artist_name']})"
+            for _, row in top_albums.iterrows()
+        ]
+
+        bars = ax.barh(
+            range(len(top_albums)),
+            top_albums[y_col],
+            color=sns.color_palette("husl", len(top_albums))
+        )
+
+        ax.set_yticks(range(len(top_albums)))
+        ax.set_yticklabels(labels, fontsize=9)
+        ax.set_xlabel(ylabel, fontsize=12)
+        ax.set_title(f"Top Albums ({metric.title()} Base)", fontsize=14, fontweight="bold")
+        ax.grid(axis="x", alpha=0.3)
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_top_artists_by_year(self, top_artists: pd.DataFrame, metric: str, year: int, output_name: str):
+        """年ごとのトップアーティストグラフ"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_artists = top_artists.sort_values(y_col, ascending=True)
+
+        bars = ax.barh(
+            range(len(top_artists)),
+            top_artists[y_col],
+            color=sns.color_palette("husl", len(top_artists))
+        )
+
+        ax.set_yticks(range(len(top_artists)))
+        ax.set_yticklabels(top_artists["master_metadata_album_artist_name"], fontsize=10)
+        ax.set_xlabel(ylabel, fontsize=12)
+        ax.set_title(f"Top Artists {year} ({metric.title()} Base)", fontsize=14, fontweight="bold")
+        ax.grid(axis="x", alpha=0.3)
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_top_tracks_by_year(self, top_tracks: pd.DataFrame, metric: str, year: int, output_name: str):
+        """年ごとのトップトラックグラフ"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_tracks = top_tracks.sort_values(y_col, ascending=True)
+        labels = [
+            f"{row['master_metadata_track_name']}\n({row['master_metadata_album_artist_name']})"
+            for _, row in top_tracks.iterrows()
+        ]
+
+        bars = ax.barh(
+            range(len(top_tracks)),
+            top_tracks[y_col],
+            color=sns.color_palette("husl", len(top_tracks))
+        )
+
+        ax.set_yticks(range(len(top_tracks)))
+        ax.set_yticklabels(labels, fontsize=9)
+        ax.set_xlabel(ylabel, fontsize=12)
+        ax.set_title(f"Top Tracks {year} ({metric.title()} Base)", fontsize=14, fontweight="bold")
+        ax.grid(axis="x", alpha=0.3)
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_top_albums_by_year(self, top_albums: pd.DataFrame, metric: str, year: int, output_name: str):
+        """年ごとのトップアルバムグラフ"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+
+        if metric == "count":
+            y_col = "play_count"
+            ylabel = "再生回数"
+        else:
+            y_col = "total_hours"
+            ylabel = "再生時間 (時間)"
+
+        top_albums = top_albums.sort_values(y_col, ascending=True)
+        labels = [
+            f"{row['master_metadata_album_album_name']}\n({row['master_metadata_album_artist_name']})"
+            for _, row in top_albums.iterrows()
+        ]
+
+        bars = ax.barh(
+            range(len(top_albums)),
+            top_albums[y_col],
+            color=sns.color_palette("husl", len(top_albums))
+        )
+
+        ax.set_yticks(range(len(top_albums)))
+        ax.set_yticklabels(labels, fontsize=9)
+        ax.set_xlabel(ylabel, fontsize=12)
+        ax.set_title(f"Top Albums {year} ({metric.title()} Base)", fontsize=14, fontweight="bold")
+        ax.grid(axis="x", alpha=0.3)
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_peak_listening_time_by_year(self, heatmap_data: pd.DataFrame, year: int, output_name: str):
+        """年ごとの時間帯×曜日のヒートマップ"""
+        # ピボットテーブル作成
+        pivot = heatmap_data.pivot_table(
+            values="total_hours",
+            index="day_of_week",
+            columns="hour",
+            fill_value=0
+        )
+
+        # 曜日ラベル
+        day_labels = ["月", "火", "水", "木", "金", "土", "日"]
+        pivot.index = [day_labels[i] for i in pivot.index]
+
+        fig, ax = plt.subplots(figsize=(14, 6))
+        sns.heatmap(
+            pivot,
+            annot=True,
+            fmt=".1f",
+            cmap="YlOrRd",
+            cbar_kws={"label": "再生時間 (時間)"},
+            ax=ax
+        )
+        ax.set_xlabel("時間帯", fontsize=12)
+        ax.set_ylabel("曜日", fontsize=12)
+        ax.set_title(f"Peak Listening Time {year}", fontsize=14, fontweight="bold")
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_genre_distribution_by_year(self, genre_data: Dict, year: int, output_name: str):
+        """年ごとのジャンル分布グラフ"""
+        if not genre_data.get("genres"):
+            return
+
+        genres_df = pd.DataFrame(genre_data["genres"])
+        top_20 = genres_df.head(20)
+
+        fig, ax = plt.subplots(figsize=(14, 10))
+
+        colors = sns.color_palette("husl", len(top_20))
+        wedges, texts, autotexts = ax.pie(
+            top_20["total_hours"],
+            labels=top_20["genre"],
+            autopct="%1.1f%%",
+            colors=colors,
+            startangle=90
+        )
+
+        # ラベルサイズ調整
+        for text in texts:
+            text.set_fontsize(9)
+        for autotext in autotexts:
+            autotext.set_fontsize(8)
+            autotext.set_color("white")
+            autotext.set_weight("bold")
+
+        ax.set_title(f"Genre Distribution {year} - ジャンル分布", fontsize=14, fontweight="bold", pad=20)
+
+        plt.tight_layout()
+        plt.savefig(self.images_dir / output_name, dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_artist_trends_plotly(self, trends_df: pd.DataFrame, output_name: str, cumulative: bool = False):
+        """アーティストごとの再生推移（Plotly）"""
+        if trends_df.empty:
+            return
+
+        fig = go.Figure()
+
+        artists = trends_df["artist"].unique()
+        colors = px.colors.qualitative.Set3
+
+        for i, artist in enumerate(artists):
+            artist_data = trends_df[trends_df["artist"] == artist].sort_values("date")
+
+            if cumulative:
+                y_col = "cumulative_hours"
+                y_label = "累積再生時間 (時間)"
+            else:
+                y_col = "total_hours"
+                y_label = "再生時間 (時間)"
+
+            fig.add_trace(go.Scatter(
+                x=artist_data["date"],
+                y=artist_data[y_col],
+                mode="lines+markers",
+                name=artist,
+                line=dict(color=colors[i % len(colors)], width=2),
+                marker=dict(size=6)
+            ))
+
+        fig.update_layout(
+            title="アーティストごとの再生推移",
+            xaxis_title="日付",
+            yaxis_title=y_label,
+            hovermode="x unified",
+            height=600,
+            font=dict(size=12)
+        )
+
+        fig.write_html(str(self.images_dir / output_name))
+
+    def plot_genre_trends_plotly(self, trends_df: pd.DataFrame, output_name: str, cumulative: bool = False):
+        """ジャンルごとの再生推移（Plotly）"""
+        if trends_df.empty:
+            return
+
+        fig = go.Figure()
+
+        genres = trends_df["genre"].unique()
+        colors = px.colors.qualitative.Set3
+
+        for i, genre in enumerate(genres):
+            genre_data = trends_df[trends_df["genre"] == genre].sort_values("date")
+
+            if cumulative:
+                y_col = "cumulative_hours"
+                y_label = "累積再生時間 (時間)"
+            else:
+                y_col = "total_hours"
+                y_label = "再生時間 (時間)"
+
+            fig.add_trace(go.Scatter(
+                x=genre_data["date"],
+                y=genre_data[y_col],
+                mode="lines+markers",
+                name=genre,
+                line=dict(color=colors[i % len(colors)], width=2),
+                marker=dict(size=6)
+            ))
+
+        fig.update_layout(
+            title="ジャンルごとの再生推移",
+            xaxis_title="日付",
+            yaxis_title=y_label,
+            hovermode="x unified",
+            height=600,
+            font=dict(size=12)
+        )
+
+        fig.write_html(str(self.images_dir / output_name))
+
     def generate_html_report(self, analysis_results: Dict, template_path: Optional[str] = None):
         """HTMLレポートを生成"""
         if template_path is None:
@@ -298,6 +575,10 @@ class Reporter:
     def _create_default_template(self, template_path: Path):
         """デフォルトのHTMLテンプレートを作成"""
         template_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # テンプレートファイルが存在する場合はそれを使用
+        if template_path.exists():
+            return
 
         template_content = """<!DOCTYPE html>
 <html lang="ja">

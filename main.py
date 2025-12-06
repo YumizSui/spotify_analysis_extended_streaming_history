@@ -40,28 +40,116 @@ def main():
 
         print(f"✓ 基本解析完了")
 
+        # 年ごとの分析
+        available_years = analyzer.get_available_years()
+        yearly_kpis = analyzer.get_yearly_kpis()
+        yearly_data = {}
+
+        print(f"\n年ごとの解析中... ({len(available_years)}年分)")
+        for year in available_years:
+            yearly_data[year] = {
+                "kpis": yearly_kpis[year],
+                "top_artists_count": analyzer.get_top_artists_by_year(year, "count", 100),
+                "top_artists_duration": analyzer.get_top_artists_by_year(year, "duration", 100),
+                "top_tracks_count": analyzer.get_top_tracks_by_year(year, "count", 100),
+                "top_tracks_duration": analyzer.get_top_tracks_by_year(year, "duration", 100),
+                "top_albums_count": analyzer.get_top_albums_by_year(year, "count", 100),
+                "top_albums_duration": analyzer.get_top_albums_by_year(year, "duration", 100),
+                "peak_listening": analyzer.get_peak_listening_time_by_year(year),
+            }
+        print(f"✓ 年ごと解析完了")
+
+        # 推移分析
+        print(f"\n推移分析中...")
+        artist_trends = analyzer.get_artist_trends(top_n=10, cumulative=False)
+        artist_trends_cumulative = analyzer.get_artist_trends(top_n=10, cumulative=True)
+        print(f"✓ アーティスト推移完了")
+
         # 3. Reporter: グラフ生成
         print("\n[3/4] グラフ生成中...")
         reporter = Reporter()
 
+        # 全期間のグラフ
         reporter.plot_top_artists(top_artists_count, "count", "top_artists_count.png")
         reporter.plot_top_artists(top_artists_duration, "duration", "top_artists_duration.png")
         reporter.plot_top_tracks(top_tracks_count, "count", "top_tracks_count.png")
         reporter.plot_top_tracks(top_tracks_duration, "duration", "top_tracks_duration.png")
+        reporter.plot_top_albums(top_albums_count, "count", "top_albums_count.png")
+        reporter.plot_top_albums(top_albums_duration, "duration", "top_albums_duration.png")
         reporter.plot_peak_listening_time(peak_listening, "peak_listening_time.png")
         reporter.plot_seasonal_trends(seasonal_trends, "seasonal_trends.png")
+
+        # 年ごとのグラフ生成
+        for year in available_years:
+            year_data = yearly_data[year]
+            reporter.plot_top_artists_by_year(
+                year_data["top_artists_count"], "count", year,
+                f"top_artists_count_{year}.png"
+            )
+            reporter.plot_top_artists_by_year(
+                year_data["top_artists_duration"], "duration", year,
+                f"top_artists_duration_{year}.png"
+            )
+            reporter.plot_top_tracks_by_year(
+                year_data["top_tracks_count"], "count", year,
+                f"top_tracks_count_{year}.png"
+            )
+            reporter.plot_top_tracks_by_year(
+                year_data["top_tracks_duration"], "duration", year,
+                f"top_tracks_duration_{year}.png"
+            )
+            reporter.plot_top_albums_by_year(
+                year_data["top_albums_count"], "count", year,
+                f"top_albums_count_{year}.png"
+            )
+            reporter.plot_top_albums_by_year(
+                year_data["top_albums_duration"], "duration", year,
+                f"top_albums_duration_{year}.png"
+            )
+            reporter.plot_peak_listening_time_by_year(
+                year_data["peak_listening"], year,
+                f"peak_listening_time_{year}.png"
+            )
+
+        # 推移グラフ（Plotly）
+        if not artist_trends.empty:
+            reporter.plot_artist_trends_plotly(
+                artist_trends, "artist_trends.html", cumulative=False
+            )
+            reporter.plot_artist_trends_plotly(
+                artist_trends_cumulative, "artist_trends_cumulative.html", cumulative=True
+            )
 
         print(f"✓ グラフ生成完了")
 
         # 4. HTMLレポート生成
         print("\n[4/4] HTMLレポート生成中...")
 
+        # 年ごとのデータを辞書形式に変換
+        yearly_data_dict = {}
+        for year in available_years:
+            year_data = yearly_data[year]
+            yearly_data_dict[year] = {
+                "kpis": year_data["kpis"],
+                "top_artists_count": year_data["top_artists_count"].to_dict("records"),
+                "top_artists_duration": year_data["top_artists_duration"].to_dict("records"),
+                "top_tracks_count": year_data["top_tracks_count"].to_dict("records"),
+                "top_tracks_duration": year_data["top_tracks_duration"].to_dict("records"),
+                "top_albums_count": year_data["top_albums_count"].to_dict("records"),
+                "top_albums_duration": year_data["top_albums_duration"].to_dict("records"),
+            }
+
         analysis_results = {
             "kpis": kpis,
+            "available_years": available_years,
+            "yearly_data": yearly_data_dict,
             "top_artists_count": top_artists_count.to_dict("records"),
             "top_artists_duration": top_artists_duration.to_dict("records"),
             "top_tracks_count": top_tracks_count.to_dict("records"),
             "top_tracks_duration": top_tracks_duration.to_dict("records"),
+            "top_albums_count": top_albums_count.to_dict("records"),
+            "top_albums_duration": top_albums_duration.to_dict("records"),
+            "has_artist_trends": not artist_trends.empty,
         }
 
         reporter.generate_html_report(analysis_results)
