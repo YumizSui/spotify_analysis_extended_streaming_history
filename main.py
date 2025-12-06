@@ -59,10 +59,13 @@ def main():
             }
         print(f"✓ 年ごと解析完了")
 
-        # 推移分析
+        # 推移分析（JSON用に100件取得、表示は選択可能）
         print(f"\n推移分析中...")
-        artist_trends = analyzer.get_artist_trends(top_n=10, cumulative=False)
-        artist_trends_cumulative = analyzer.get_artist_trends(top_n=10, cumulative=True)
+        artist_trends = analyzer.get_artist_trends(top_n=100, cumulative=False)
+        artist_trends_cumulative = analyzer.get_artist_trends(top_n=100, cumulative=True)
+        # グラフ用には10件のみ
+        artist_trends_for_plot = analyzer.get_artist_trends(top_n=10, cumulative=False)
+        artist_trends_cumulative_for_plot = analyzer.get_artist_trends(top_n=10, cumulative=True)
         print(f"✓ アーティスト推移完了")
 
         # 3. Reporter: グラフ生成
@@ -114,68 +117,62 @@ def main():
                 f"peak_listening_time_{year}.png"
             )
 
-        # 推移グラフ（Plotly）
-        if not artist_trends.empty:
+        # 推移グラフ（Plotly）- 初期表示用に10件のみ
+        if not artist_trends_for_plot.empty:
             print("推移グラフ生成中...")
             reporter.plot_artist_trends_plotly(
-                artist_trends, "artist_trends.html", cumulative=False
+                artist_trends_for_plot, "artist_trends.html", cumulative=False
             )
             reporter.plot_artist_trends_plotly(
-                artist_trends_cumulative, "artist_trends_cumulative.html", cumulative=True
+                artist_trends_cumulative_for_plot, "artist_trends_cumulative.html", cumulative=True
             )
 
         print(f"✓ グラフ生成完了")
 
         # 3.5. JSONデータ生成
         print("\n[3.5/4] JSONデータ生成中...")
-        limits = [10, 20, 30, 50, 100]
 
-        # 全期間データのJSON生成
+        # 全期間データのJSON生成（limitごとに分けずに全部のデータを保存）
         all_period_data = {
-            "count": {},
-            "duration": {}
+            "count": {
+                "artists": reporter.save_top_artists_json(top_artists_count, "count"),
+                "tracks": reporter.save_top_tracks_json(top_tracks_count, "count"),
+                "albums": reporter.save_top_albums_json(top_albums_count, "count"),
+            },
+            "duration": {
+                "artists": reporter.save_top_artists_json(top_artists_duration, "duration"),
+                "tracks": reporter.save_top_tracks_json(top_tracks_duration, "duration"),
+                "albums": reporter.save_top_albums_json(top_albums_duration, "duration"),
+            }
         }
-
-        for limit in limits:
-            # 再生数ベース
-            all_period_data["count"][str(limit)] = {
-                "artists": reporter.save_top_artists_json(top_artists_count, "count", limit),
-                "tracks": reporter.save_top_tracks_json(top_tracks_count, "count", limit),
-                "albums": reporter.save_top_albums_json(top_albums_count, "count", limit),
-            }
-            # 再生時間ベース
-            all_period_data["duration"][str(limit)] = {
-                "artists": reporter.save_top_artists_json(top_artists_duration, "duration", limit),
-                "tracks": reporter.save_top_tracks_json(top_tracks_duration, "duration", limit),
-                "albums": reporter.save_top_albums_json(top_albums_duration, "duration", limit),
-            }
 
         reporter.save_data_json(all_period_data, "all_period_data.json")
 
-        # 年ごとデータのJSON生成
+        # 年ごとデータのJSON生成（limitごとに分けずに全部のデータを保存）
         yearly_data_json = {}
         for year in available_years:
             year_data = yearly_data[year]
             yearly_data_json[str(year)] = {
-                "count": {},
-                "duration": {}
+                "count": {
+                    "artists": reporter.save_top_artists_json(year_data["top_artists_count"], "count"),
+                    "tracks": reporter.save_top_tracks_json(year_data["top_tracks_count"], "count"),
+                    "albums": reporter.save_top_albums_json(year_data["top_albums_count"], "count"),
+                },
+                "duration": {
+                    "artists": reporter.save_top_artists_json(year_data["top_artists_duration"], "duration"),
+                    "tracks": reporter.save_top_tracks_json(year_data["top_tracks_duration"], "duration"),
+                    "albums": reporter.save_top_albums_json(year_data["top_albums_duration"], "duration"),
+                }
             }
 
-            for limit in limits:
-                # 再生数ベース
-                yearly_data_json[str(year)]["count"][str(limit)] = {
-                    "artists": reporter.save_top_artists_json(year_data["top_artists_count"], "count", limit),
-                    "tracks": reporter.save_top_tracks_json(year_data["top_tracks_count"], "count", limit),
-                    "albums": reporter.save_top_albums_json(year_data["top_albums_count"], "count", limit),
-                }
-                # 再生時間ベース
-                yearly_data_json[str(year)]["duration"][str(limit)] = {
-                    "artists": reporter.save_top_artists_json(year_data["top_artists_duration"], "duration", limit),
-                    "tracks": reporter.save_top_tracks_json(year_data["top_tracks_duration"], "duration", limit),
-                    "albums": reporter.save_top_albums_json(year_data["top_albums_duration"], "duration", limit),
-                }
-
         reporter.save_data_json(yearly_data_json, "yearly_data.json")
+
+        # アーティスト推移データのJSON生成（全件数分を保存）
+        artist_trends_data = {
+            "normal": reporter.save_artist_trends_json(artist_trends, cumulative=False),
+            "cumulative": reporter.save_artist_trends_json(artist_trends_cumulative, cumulative=True)
+        }
+        reporter.save_data_json(artist_trends_data, "artist_trends_data.json")
         print(f"✓ JSONデータ生成完了")
 
         # 4. HTMLレポート生成
@@ -208,6 +205,7 @@ def main():
             "has_artist_trends": not artist_trends.empty,
             "all_period_data_json": all_period_data,
             "yearly_data_json": yearly_data_json,
+            "artist_trends_data_json": artist_trends_data,
         }
 
         reporter.generate_html_report(analysis_results)

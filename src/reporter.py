@@ -123,7 +123,7 @@ class Reporter:
 
         top_tracks = top_tracks.sort_values(y_col, ascending=True)
         labels = [
-            f"{row['master_metadata_track_name']}\n({row['master_metadata_album_artist_name']})"
+            f"{row['master_metadata_track_name']} - {row['master_metadata_album_artist_name']}"
             for _, row in top_tracks.iterrows()
         ]
 
@@ -320,7 +320,7 @@ class Reporter:
 
         top_albums = top_albums.sort_values(y_col, ascending=True)
         labels = [
-            f"{row['master_metadata_album_album_name']}\n({row['master_metadata_album_artist_name']})"
+            f"{row['master_metadata_album_album_name']} - {row['master_metadata_album_artist_name']}"
             for _, row in top_albums.iterrows()
         ]
 
@@ -382,7 +382,7 @@ class Reporter:
 
         top_tracks = top_tracks.sort_values(y_col, ascending=True)
         labels = [
-            f"{row['master_metadata_track_name']}\n({row['master_metadata_album_artist_name']})"
+            f"{row['master_metadata_track_name']} - {row['master_metadata_album_artist_name']}"
             for _, row in top_tracks.iterrows()
         ]
 
@@ -415,7 +415,7 @@ class Reporter:
 
         top_albums = top_albums.sort_values(y_col, ascending=True)
         labels = [
-            f"{row['master_metadata_album_album_name']}\n({row['master_metadata_album_artist_name']})"
+            f"{row['master_metadata_album_album_name']} - {row['master_metadata_album_artist_name']}"
             for _, row in top_albums.iterrows()
         ]
 
@@ -579,7 +579,7 @@ class Reporter:
 
         fig.write_html(str(self.images_dir / output_name))
 
-    def save_top_artists_json(self, top_artists: pd.DataFrame, metric: str, limit: int) -> Dict:
+    def save_top_artists_json(self, top_artists: pd.DataFrame, metric: str, limit: int = None) -> Dict:
         """トップアーティストデータをJSON形式で返す"""
         if metric == "count":
             y_col = "play_count"
@@ -588,7 +588,9 @@ class Reporter:
             y_col = "total_hours"
             ylabel = "再生時間 (時間)"
 
-        top_artists_sorted = top_artists.sort_values(y_col, ascending=False).head(limit)
+        top_artists_sorted = top_artists.sort_values(y_col, ascending=False)
+        if limit is not None:
+            top_artists_sorted = top_artists_sorted.head(limit)
 
         return {
             "metric": metric,
@@ -596,7 +598,7 @@ class Reporter:
             "data": top_artists_sorted.to_dict("records")
         }
 
-    def save_top_tracks_json(self, top_tracks: pd.DataFrame, metric: str, limit: int) -> Dict:
+    def save_top_tracks_json(self, top_tracks: pd.DataFrame, metric: str, limit: int = None) -> Dict:
         """トップトラックデータをJSON形式で返す"""
         if metric == "count":
             y_col = "play_count"
@@ -605,7 +607,9 @@ class Reporter:
             y_col = "total_hours"
             ylabel = "再生時間 (時間)"
 
-        top_tracks_sorted = top_tracks.sort_values(y_col, ascending=False).head(limit)
+        top_tracks_sorted = top_tracks.sort_values(y_col, ascending=False)
+        if limit is not None:
+            top_tracks_sorted = top_tracks_sorted.head(limit)
 
         return {
             "metric": metric,
@@ -613,7 +617,7 @@ class Reporter:
             "data": top_tracks_sorted.to_dict("records")
         }
 
-    def save_top_albums_json(self, top_albums: pd.DataFrame, metric: str, limit: int) -> Dict:
+    def save_top_albums_json(self, top_albums: pd.DataFrame, metric: str, limit: int = None) -> Dict:
         """トップアルバムデータをJSON形式で返す"""
         if metric == "count":
             y_col = "play_count"
@@ -622,12 +626,35 @@ class Reporter:
             y_col = "total_hours"
             ylabel = "再生時間 (時間)"
 
-        top_albums_sorted = top_albums.sort_values(y_col, ascending=False).head(limit)
+        top_albums_sorted = top_albums.sort_values(y_col, ascending=False)
+        if limit is not None:
+            top_albums_sorted = top_albums_sorted.head(limit)
 
         return {
             "metric": metric,
             "ylabel": ylabel,
             "data": top_albums_sorted.to_dict("records")
+        }
+
+    def save_artist_trends_json(self, trends_df: pd.DataFrame, cumulative: bool = False) -> Dict:
+        """アーティスト推移データをJSON形式で返す"""
+        if trends_df.empty:
+            return {
+                "cumulative": cumulative,
+                "data": []
+            }
+
+        # DataFrameを辞書形式に変換
+        trends_dict = trends_df.to_dict("records")
+
+        # 日付を文字列に変換
+        for record in trends_dict:
+            if "date" in record and pd.notna(record["date"]):
+                record["date"] = record["date"].strftime("%Y-%m-%d")
+
+        return {
+            "cumulative": cumulative,
+            "data": trends_dict
         }
 
     def save_data_json(self, data: Dict, filename: str):
