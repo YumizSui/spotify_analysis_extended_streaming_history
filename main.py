@@ -1,6 +1,7 @@
 """メインエントリーポイント"""
 import sys
 from pathlib import Path
+from datetime import datetime
 import pandas as pd
 from src.loader import DataLoader
 from src.analyzer import Analyzer
@@ -71,51 +72,6 @@ def main():
         # 3. Reporter: グラフ生成
         print("\n[3/4] グラフ生成中...")
         reporter = Reporter()
-
-        # 全期間のグラフ
-        print("全期間のグラフ生成中...")
-        reporter.plot_top_artists(top_artists_count, "count", "top_artists_count.png")
-        reporter.plot_top_artists(top_artists_duration, "duration", "top_artists_duration.png")
-        reporter.plot_top_tracks(top_tracks_count, "count", "top_tracks_count.png")
-        reporter.plot_top_tracks(top_tracks_duration, "duration", "top_tracks_duration.png")
-        reporter.plot_top_albums(top_albums_count, "count", "top_albums_count.png")
-        reporter.plot_top_albums(top_albums_duration, "duration", "top_albums_duration.png")
-        reporter.plot_peak_listening_time(peak_listening, "peak_listening_time.png")
-        reporter.plot_seasonal_trends(seasonal_trends, "seasonal_trends.png")
-
-        print("年ごとのグラフ生成中...")
-        # 年ごとのグラフ生成
-        for year in available_years:
-            print(f"年ごとのグラフ生成中... {year}年")
-            year_data = yearly_data[year]
-            reporter.plot_top_artists_by_year(
-                year_data["top_artists_count"], "count", year,
-                f"top_artists_count_{year}.png"
-            )
-            reporter.plot_top_artists_by_year(
-                year_data["top_artists_duration"], "duration", year,
-                f"top_artists_duration_{year}.png"
-            )
-            reporter.plot_top_tracks_by_year(
-                year_data["top_tracks_count"], "count", year,
-                f"top_tracks_count_{year}.png"
-            )
-            reporter.plot_top_tracks_by_year(
-                year_data["top_tracks_duration"], "duration", year,
-                f"top_tracks_duration_{year}.png"
-            )
-            reporter.plot_top_albums_by_year(
-                year_data["top_albums_count"], "count", year,
-                f"top_albums_count_{year}.png"
-            )
-            reporter.plot_top_albums_by_year(
-                year_data["top_albums_duration"], "duration", year,
-                f"top_albums_duration_{year}.png"
-            )
-            reporter.plot_peak_listening_time_by_year(
-                year_data["peak_listening"], year,
-                f"peak_listening_time_{year}.png"
-            )
 
         # 推移グラフ（Plotly）- 初期表示用に10件のみ
         if not artist_trends_for_plot.empty:
@@ -192,6 +148,9 @@ def main():
                 "top_albums_duration": year_data["top_albums_duration"].to_dict("records"),
             }
 
+        # 最終更新日を生成
+        last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         analysis_results = {
             "kpis": kpis,
             "available_years": available_years,
@@ -206,6 +165,7 @@ def main():
             "all_period_data_json": all_period_data,
             "yearly_data_json": yearly_data_json,
             "artist_trends_data_json": artist_trends_data,
+            "last_updated": last_updated,
         }
 
         reporter.generate_html_report(analysis_results)

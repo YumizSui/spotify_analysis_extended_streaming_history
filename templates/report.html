@@ -138,11 +138,19 @@
         tr:hover {
             background-color: #f5f5f5;
         }
+        .last-updated {
+            text-align: center;
+            color: #999;
+            font-size: 0.75em;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎵 My Personal Spotify Wrapped</h1>
+        <h1>Spotify Wrapped</h1>
 
         <!-- 第1階層タブ: 全期間 / 年ごと -->
         <div class="tabs-level1">
@@ -231,16 +239,6 @@
                     <h2>Top Albums (再生時間)</h2>
                     <div id="all-albums-duration-chart" class="chart-container"></div>
                 </div>
-            </div>
-
-            <div class="section">
-                <h2>Peak Listening Time</h2>
-                <img src="images/peak_listening_time.png" alt="Peak Listening Time">
-            </div>
-
-            <div class="section">
-                <h2>Seasonal Trends</h2>
-                <img src="images/seasonal_trends.png" alt="Seasonal Trends">
             </div>
 
             <div class="section">
@@ -371,27 +369,11 @@
                 </div>
             </div>
 
-            <div class="section">
-                <h2>Peak Listening Time</h2>
-                <img id="yearly-peak-img" src="images/peak_listening_time_{{ available_years[-1] }}.png" alt="Peak Listening Time">
-            </div>
         </div>
 
-        {% if audio_aura %}
-        <div class="section">
-            <h2>Audio Aura - オーディオ特徴量</h2>
-            <div class="chart-container">
-                <iframe src="images/audio_aura.html" width="100%" height="600" frameborder="0"></iframe>
-            </div>
+        <div class="last-updated">
+            Last updated: {{ last_updated }}
         </div>
-        {% endif %}
-
-        {% if genre_data %}
-        <div class="section">
-            <h2>Genre Distribution - ジャンル分布</h2>
-            <img src="images/genre_pie.png" alt="Genre Distribution">
-        </div>
-        {% endif %}
     </div>
 
     <script>
@@ -482,11 +464,6 @@
             currentYear = parseInt(document.getElementById('year-select').value);
             console.log('Switching to year:', currentYear);
             updateYearlyKPI();
-            // Peak Listening Time画像も更新
-            const peakImg = document.getElementById('yearly-peak-img');
-            if (peakImg) {
-                peakImg.src = `images/peak_listening_time_${currentYear}.png`;
-            }
             // 現在表示されているタブコンテンツを確認してメトリックを判定
             const countTab = document.getElementById('yearly-count-tab');
             const durationTab = document.getElementById('yearly-duration-tab');
@@ -779,32 +756,102 @@
             // サブプロットのレイアウト（2行3列、手動でdomainを設定、マージンを追加）
             const layout = {
                 title: { text: 'KPI推移（年ごと）', font: { size: 18 } },
-                height: 800,
-                margin: { l: 60, r: 20, t: 80, b: 60 },
+                height: 900,
+                margin: { l: 100, r: 30, t: 120, b: 120 },
                 // 1行目（上部）
-                xaxis: { domain: [0, 0.31], title: '年', anchor: 'y1', side: 'bottom' },
-                xaxis2: { domain: [0.345, 0.655], title: '年', anchor: 'y2', side: 'bottom' },
-                xaxis3: { domain: [0.69, 1], title: '年', anchor: 'y3', side: 'bottom' },
+                xaxis: {
+                    domain: [0, 0.30],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y1',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
+                xaxis2: {
+                    domain: [0.35, 0.65],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y2',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
+                xaxis3: {
+                    domain: [0.70, 1],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y3',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
                 // 2行目（下部）
-                xaxis4: { domain: [0, 0.31], title: '年', anchor: 'y4', side: 'bottom' },
-                xaxis5: { domain: [0.345, 0.655], title: '年', anchor: 'y5', side: 'bottom' },
-                xaxis6: { domain: [0.69, 1], title: '年', anchor: 'y6', side: 'bottom' },
+                xaxis4: {
+                    domain: [0, 0.30],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y4',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
+                xaxis5: {
+                    domain: [0.35, 0.65],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y5',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
+                xaxis6: {
+                    domain: [0.70, 1],
+                    title: { text: '年', font: { size: 12 } },
+                    anchor: 'y6',
+                    side: 'bottom',
+                    tickangle: -45,
+                    tickfont: { size: 10 }
+                },
                 // 1行目のY軸（上部）
-                yaxis: { domain: [0.52, 0.98], title: '総再生時間 (時間)', anchor: 'x1', side: 'left' },
-                yaxis2: { domain: [0.52, 0.98], title: '総再生回数', anchor: 'x2', side: 'left' },
-                yaxis3: { domain: [0.52, 0.98], title: '有効再生回数', anchor: 'x3', side: 'left' },
+                yaxis: {
+                    domain: [0.52, 0.98],
+                    title: { text: '総再生時間 (時間)', standoff: 20, font: { size: 11 } },
+                    anchor: 'x1',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
+                yaxis2: {
+                    domain: [0.52, 0.98],
+                    title: { text: '総再生回数', standoff: 20, font: { size: 11 } },
+                    anchor: 'x2',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
+                yaxis3: {
+                    domain: [0.52, 0.98],
+                    title: { text: '有効再生回数', standoff: 20, font: { size: 11 } },
+                    anchor: 'x3',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
                 // 2行目のY軸（下部）
-                yaxis4: { domain: [0.02, 0.48], title: 'ユニークアーティスト', anchor: 'x4', side: 'left' },
-                yaxis5: { domain: [0.02, 0.48], title: 'ユニークトラック', anchor: 'x5', side: 'left' },
-                yaxis6: { domain: [0.02, 0.48], title: 'Listen Through Rate (%)', anchor: 'x6', side: 'left' },
-                annotations: [
-                    { text: '総再生時間 (時間)', x: 0.155, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
-                    { text: '総再生回数', x: 0.5, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
-                    { text: '有効再生回数', x: 0.845, y: 0.75, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
-                    { text: 'ユニークアーティスト', x: 0.155, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
-                    { text: 'ユニークトラック', x: 0.5, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } },
-                    { text: 'Listen Through Rate (%)', x: 0.845, y: 0.25, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 12, weight: 'bold' } }
-                ],
+                yaxis4: {
+                    domain: [0.02, 0.48],
+                    title: { text: 'ユニークアーティスト', standoff: 20, font: { size: 11 } },
+                    anchor: 'x4',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
+                yaxis5: {
+                    domain: [0.02, 0.48],
+                    title: { text: 'ユニークトラック', standoff: 20, font: { size: 11 } },
+                    anchor: 'x5',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
+                yaxis6: {
+                    domain: [0.02, 0.48],
+                    title: { text: 'Listen Through Rate (%)', standoff: 20, font: { size: 11 } },
+                    anchor: 'x6',
+                    side: 'left',
+                    tickfont: { size: 10 }
+                },
                 showlegend: false
             };
 
