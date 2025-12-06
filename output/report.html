@@ -121,6 +121,15 @@
         .chart-container {
             margin: 30px 0;
         }
+        .kpi-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .kpi-chart-item {
+            min-height: 300px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -243,8 +252,25 @@
 
             <div class="section">
                 <h2>KPI推移（年ごと）</h2>
-                <div class="chart-container">
-                    <div id="kpi-trends-chart"></div>
+                <div class="kpi-charts-grid">
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-1"></div>
+                    </div>
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-2"></div>
+                    </div>
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-3"></div>
+                    </div>
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-4"></div>
+                    </div>
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-5"></div>
+                    </div>
+                    <div class="kpi-chart-item">
+                        <div id="kpi-trends-chart-6"></div>
+                    </div>
                 </div>
             </div>
 
@@ -380,9 +406,9 @@
             </div>
 
         </div>
-        
+
         <div class="last-updated">
-            Last updated: 
+            Last updated: 2025-12-06 04:18:39
         </div>
     </div>
 
@@ -704,181 +730,90 @@
             console.log('kpiData:', kpiData);
 
             const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
-
-            // サブプロットを作成（2行3列、手動でdomainを設定）
-            const traces = [
+            const chartConfigs = [
                 {
-                    x: years,
-                    y: kpiData.total_duration_hours,
-                    name: '総再生時間 (時間)',
-                    type: 'bar',
-                    marker: { color: colors[0] },
-                    xaxis: 'x1',
-                    yaxis: 'y1'
+                    id: 'kpi-trends-chart-1',
+                    data: kpiData.total_duration_hours,
+                    title: '総再生時間 (時間)',
+                    ylabel: '総再生時間 (時間)',
+                    color: colors[0]
                 },
                 {
-                    x: years,
-                    y: kpiData.total_plays,
-                    name: '総再生回数',
-                    type: 'bar',
-                    marker: { color: colors[1] },
-                    xaxis: 'x2',
-                    yaxis: 'y2'
+                    id: 'kpi-trends-chart-2',
+                    data: kpiData.total_plays,
+                    title: '総再生回数',
+                    ylabel: '総再生回数',
+                    color: colors[1]
                 },
                 {
-                    x: years,
-                    y: kpiData.valid_plays,
-                    name: '有効再生回数',
-                    type: 'bar',
-                    marker: { color: colors[2] },
-                    xaxis: 'x3',
-                    yaxis: 'y3'
+                    id: 'kpi-trends-chart-3',
+                    data: kpiData.valid_plays,
+                    title: '有効再生回数',
+                    ylabel: '有効再生回数',
+                    color: colors[2]
                 },
                 {
-                    x: years,
-                    y: kpiData.unique_artists,
-                    name: 'ユニークアーティスト',
-                    type: 'bar',
-                    marker: { color: colors[3] },
-                    xaxis: 'x4',
-                    yaxis: 'y4'
+                    id: 'kpi-trends-chart-4',
+                    data: kpiData.unique_artists,
+                    title: 'ユニークアーティスト',
+                    ylabel: 'ユニークアーティスト',
+                    color: colors[3]
                 },
                 {
-                    x: years,
-                    y: kpiData.unique_tracks,
-                    name: 'ユニークトラック',
-                    type: 'bar',
-                    marker: { color: colors[4] },
-                    xaxis: 'x5',
-                    yaxis: 'y5'
+                    id: 'kpi-trends-chart-5',
+                    data: kpiData.unique_tracks,
+                    title: 'ユニークトラック',
+                    ylabel: 'ユニークトラック',
+                    color: colors[4]
                 },
                 {
-                    x: years,
-                    y: kpiData.listen_through_rate,
-                    name: 'Listen Through Rate (%)',
-                    type: 'bar',
-                    marker: { color: colors[5] },
-                    xaxis: 'x6',
-                    yaxis: 'y6'
+                    id: 'kpi-trends-chart-6',
+                    data: kpiData.listen_through_rate,
+                    title: 'Listen Through Rate (%)',
+                    ylabel: 'Listen Through Rate (%)',
+                    color: colors[5]
                 }
             ];
 
-            // サブプロットのレイアウト（2行3列、手動でdomainを設定、マージンを追加）
-            const layout = {
-                title: { text: 'KPI推移（年ごと）', font: { size: 18 } },
-                height: 900,
-                margin: { l: 100, r: 30, t: 120, b: 120 },
-                // 1行目（上部）
-                xaxis: {
-                    domain: [0, 0.30],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y1',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                xaxis2: {
-                    domain: [0.35, 0.65],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y2',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                xaxis3: {
-                    domain: [0.70, 1],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y3',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                // 2行目（下部）
-                xaxis4: {
-                    domain: [0, 0.30],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y4',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                xaxis5: {
-                    domain: [0.35, 0.65],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y5',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                xaxis6: {
-                    domain: [0.70, 1],
-                    title: { text: '年', font: { size: 12 } },
-                    anchor: 'y6',
-                    side: 'bottom',
-                    tickangle: -45,
-                    tickfont: { size: 10 }
-                },
-                // 1行目のY軸（上部）
-                yaxis: {
-                    domain: [0.52, 0.98],
-                    title: { text: '総再生時間 (時間)', standoff: 20, font: { size: 11 } },
-                    anchor: 'x1',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                yaxis2: {
-                    domain: [0.52, 0.98],
-                    title: { text: '総再生回数', standoff: 20, font: { size: 11 } },
-                    anchor: 'x2',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                yaxis3: {
-                    domain: [0.52, 0.98],
-                    title: { text: '有効再生回数', standoff: 20, font: { size: 11 } },
-                    anchor: 'x3',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                // 2行目のY軸（下部）
-                yaxis4: {
-                    domain: [0.02, 0.48],
-                    title: { text: 'ユニークアーティスト', standoff: 20, font: { size: 11 } },
-                    anchor: 'x4',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                yaxis5: {
-                    domain: [0.02, 0.48],
-                    title: { text: 'ユニークトラック', standoff: 20, font: { size: 11 } },
-                    anchor: 'x5',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                yaxis6: {
-                    domain: [0.02, 0.48],
-                    title: { text: 'Listen Through Rate (%)', standoff: 20, font: { size: 11 } },
-                    anchor: 'x6',
-                    side: 'left',
-                    tickfont: { size: 10 }
-                },
-                showlegend: false
-            };
+            // 各グラフを個別に作成
+            chartConfigs.forEach(config => {
+                const trace = {
+                    x: years,
+                    y: config.data,
+                    name: config.title,
+                    type: 'bar',
+                    marker: { color: config.color }
+                };
 
-            const chartElement = document.getElementById('kpi-trends-chart');
-            if (!chartElement) {
-                console.error('kpi-trends-chart element not found');
-                return;
-            }
+                const layout = {
+                    title: { text: config.title, font: { size: 14 } },
+                    height: 300,
+                    margin: { l: 70, r: 20, t: 50, b: 60 },
+                    xaxis: {
+                        title: { text: '年', font: { size: 12 } },
+                        tickfont: { size: 10 }
+                    },
+                    yaxis: {
+                        title: { text: config.ylabel, font: { size: 12 } },
+                        tickfont: { size: 10 }
+                    },
+                    showlegend: false
+                };
 
-            console.log('Plotting KPI trends with', traces.length, 'traces');
-            Plotly.newPlot('kpi-trends-chart', traces, layout, { responsive: true, displayModeBar: true })
-                .then(() => {
-                    console.log('KPI trends chart rendered successfully');
-                })
-                .catch(error => {
-                    console.error('Error rendering KPI trends chart:', error);
-                });
+                const chartElement = document.getElementById(config.id);
+                if (!chartElement) {
+                    console.error(`${config.id} element not found`);
+                    return;
+                }
+
+                Plotly.newPlot(config.id, [trace], layout, { responsive: true, displayModeBar: true })
+                    .then(() => {
+                        console.log(`${config.id} rendered successfully`);
+                    })
+                    .catch(error => {
+                        console.error(`Error rendering ${config.id}:`, error);
+                    });
+            });
         }
 
         function updateArtistTrends() {
