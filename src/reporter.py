@@ -34,6 +34,34 @@ class Reporter:
         # スタイル設定後に日本語フォントを再設定
         japanize_matplotlib.japanize()  # 明示的に呼び出し
 
+        # 韓国語・中国語対応のため、CJK対応フォントを設定
+        import matplotlib.font_manager as fm
+        import platform
+
+        # macOSの場合、AppleGothicやHiragino Sansを使用
+        if platform.system() == 'Darwin':  # macOS
+            # AppleGothicは韓国語・中国語・日本語に対応
+            plt.rcParams['font.family'] = ['AppleGothic', 'Hiragino Sans', 'Arial Unicode MS', 'sans-serif']
+        else:
+            # その他のOSではNoto Sans CJKなどを探す
+            font_list = fm.findSystemFonts()
+            cjk_fonts = []
+            for font_path in font_list:
+                try:
+                    font_prop = fm.FontProperties(fname=font_path)
+                    font_name = font_prop.get_name()
+                    if any(keyword in font_name.lower() for keyword in ['noto', 'nanum', 'malgun']):
+                        cjk_fonts.append(font_name)
+                except:
+                    pass
+
+            if cjk_fonts:
+                plt.rcParams['font.family'] = cjk_fonts[0]
+
+        # フォント警告を抑制（一部の文字が表示されない場合でも続行）
+        import warnings
+        warnings.filterwarnings('ignore', category=UserWarning, module='matplotlib.font_manager')
+
     def download_album_art(self, url: str, track_id: str) -> Optional[str]:
         """アルバムアートをダウンロードして保存"""
         if not url:

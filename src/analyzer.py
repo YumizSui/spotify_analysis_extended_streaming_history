@@ -330,7 +330,7 @@ class Analyzer:
         # トップアーティストを取得（全期間の再生時間ベース）
         top_artists = self.get_top_artists_by_duration(top_n)
         top_artist_names = top_artists["master_metadata_album_artist_name"].tolist()
-        
+
         # 月ごとの集計
         trends = []
         for year in self.get_available_years():
@@ -339,7 +339,7 @@ class Analyzer:
                 month_df = year_df[year_df["month"] == month]
                 if len(month_df) == 0:
                     continue
-                
+
                 for artist in top_artist_names:
                     artist_df = month_df[month_df["master_metadata_album_artist_name"] == artist]
                     if len(artist_df) > 0:
@@ -353,43 +353,43 @@ class Analyzer:
                             "play_count": play_count,
                             "date": pd.to_datetime(f"{year}-{month:02d}-01")
                         })
-        
+
         trends_df = pd.DataFrame(trends)
-        
+
         if cumulative:
             # 累積値を計算
             trends_df = trends_df.sort_values(["artist", "date"])
             trends_df["cumulative_hours"] = trends_df.groupby("artist")["total_hours"].cumsum()
             trends_df["cumulative_plays"] = trends_df.groupby("artist")["play_count"].cumsum()
-        
+
         return trends_df
 
     def get_genre_trends(self, enriched_df: pd.DataFrame, top_n: int = 10, cumulative: bool = False) -> pd.DataFrame:
         """ジャンルごとの再生推移（月次）"""
         if "genres" not in enriched_df.columns:
             return pd.DataFrame()
-        
+
         # 全期間のトップジャンルを取得
         genre_data = self.get_genre_distribution(enriched_df)
         if not genre_data.get("genres"):
             return pd.DataFrame()
-        
+
         genres_df = pd.DataFrame(genre_data["genres"])
         top_genres = genres_df.head(top_n)["genre"].tolist()
-        
+
         # 月ごとの集計
         trends = []
         for year in self.get_available_years():
             year_df = self.df[self.df["year"] == year]
             year_enriched = enriched_df[enriched_df["year"] == year] if "year" in enriched_df.columns else enriched_df
-            
+
             for month in range(1, 13):
                 month_df = year_df[year_df["month"] == month]
                 if len(month_df) == 0:
                     continue
-                
+
                 month_enriched = year_enriched[year_enriched["month"] == month] if "month" in year_enriched.columns else year_enriched
-                
+
                 for genre in top_genres:
                     # ジャンルに該当するレコードを抽出
                     genre_records = month_enriched[
@@ -397,7 +397,7 @@ class Analyzer:
                             lambda x: genre in (x if isinstance(x, list) else [g.strip() for g in str(x).split(",")] if isinstance(x, str) else [])
                         )
                     ]
-                    
+
                     if len(genre_records) > 0:
                         total_ms = genre_records["ms_played"].sum() if "ms_played" in genre_records.columns else 0
                         play_count = len(genre_records)
@@ -409,14 +409,14 @@ class Analyzer:
                             "play_count": play_count,
                             "date": pd.to_datetime(f"{year}-{month:02d}-01")
                         })
-        
+
         trends_df = pd.DataFrame(trends)
-        
+
         if cumulative:
             # 累積値を計算
             trends_df = trends_df.sort_values(["genre", "date"])
             trends_df["cumulative_hours"] = trends_df.groupby("genre")["total_hours"].cumsum()
             trends_df["cumulative_plays"] = trends_df.groupby("genre")["play_count"].cumsum()
-        
+
         return trends_df
 
